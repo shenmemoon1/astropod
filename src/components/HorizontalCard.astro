@@ -70,6 +70,8 @@ const displayDuration = formatTime(duration);
   </style>
 
   <script>
+    // 在全局范围内创建一个音频元素
+  const audioElement = new Audio();
     const fetchData = async () => {
       try {
         const response = await fetch(
@@ -91,7 +93,7 @@ const displayDuration = formatTime(duration);
           const songCard = document.createElement("div");
           songCard.classList.add("episode-card");
 
-          console.log(song.album);
+          // console.log(song.album);
 
           // Create the HTML structure for each song card
           songCard.innerHTML = `
@@ -166,32 +168,34 @@ const displayDuration = formatTime(duration);
       `;
 
           // Add a click event listener to the play button
-          const playButton = songCard.querySelector(".card-pay-buttons");
-          playButton.addEventListener("click", async () => {
-            const songId = playButton.getAttribute("data-song-id");
+         // Add a click event listener to the play button
+      const playButton = songCard.querySelector(".card-pay-buttons");
+      playButton.addEventListener("click", async () => {
+        const songId = playButton.getAttribute("data-song-id");
 
-            try {
-              // Fetch the song's audio URL using the song ID
-              const audioResponse = await fetch(
-                `https://autumnfish.cn/song/url?id=${songId}`
-              );
-              if (!audioResponse.ok) {
-                throw new Error("Failed to fetch audio URL");
-              }
-              const audioData = await audioResponse.json();
-              const audioUrl = audioData.data[0].url;
+        try {
+          // 如果当前有歌曲正在播放，先停止它
+          if (!audioElement.paused) {
+            audioElement.pause();
+          }
 
-              // Play the audio
-              const audioElement = new Audio(audioUrl);
-              if (audioElement.paused) {
-                audioElement.play();
-              } else {
-                audioElement.pause();
-              }
-            } catch (error) {
-              console.error(error);
-            }
-          });
+          // Fetch the song's audio URL using the song ID
+          const audioResponse = await fetch(
+            `https://autumnfish.cn/song/url?id=${songId}`
+          );
+          if (!audioResponse.ok) {
+            throw new Error("Failed to fetch audio URL");
+          }
+          const audioData = await audioResponse.json();
+          const audioUrl = audioData.data[0].url;
+
+          // 设置新的音频源并播放
+          audioElement.src = audioUrl;
+          audioElement.play();
+        } catch (error) {
+          console.error(error);
+        }
+      });
 
           // Append the song card to the fragment
           fragment.appendChild(songCard);
