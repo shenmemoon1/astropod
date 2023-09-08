@@ -1,5 +1,6 @@
 ---
-const { title, cover, desc, url, audioUrl, id, pubDate, duration } = Astro.props;
+const { title, cover, desc, url, audioUrl, id, pubDate, duration } =
+  Astro.props;
 
 import astropodConfig from "../../.astropod/astropod.config.json";
 import dayjs from "dayjs";
@@ -23,14 +24,17 @@ function formatTime(secs) {
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
   const formattedseconds = seconds < 10 ? `0${seconds}` : seconds;
 
-  return hours > 0 ? `${hours}:${formattedMinutes}:${formattedseconds}` : `${minutes}:${formattedseconds}`;
+  return hours > 0
+    ? `${hours}:${formattedMinutes}:${formattedseconds}`
+    : `${minutes}:${formattedseconds}`;
 }
 
 const displayDuration = formatTime(duration);
 ---
 
 <div class="episode-card">
-  <div class="hero-content flex-row">
+  <div class="song-list">
+    <!-- <div class="hero-content flex-row">
     <a href={url} class="min-w-fit">
       <img src={cover_url} alt={title} class="shadow-lg rounded-md w-[4.5rem] h-[4.5rem] md:w-24 md:h-24" />
     </a>
@@ -56,11 +60,151 @@ const displayDuration = formatTime(duration);
       </div>
     </label>
   </div>
-  <hr class="my-3 border-base-content opacity-[.15]" />
-</div>
+  <hr class="my-3 border-base-content opacity-[.15]" /> -->
+  </div>
 
-<style>
-  .episode-card:last-child hr {
-    display: none;
-  }
-</style>
+  <style>
+    .episode-card:last-child hr {
+      display: none;
+    }
+  </style>
+
+  <script>
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          "https://autumnfish.cn/search?keywords=罗言"
+        );
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
+        const randomSome = data.result.songs;
+
+        // Get a reference to the song list container
+        const songListContainer = document.querySelector(".song-list");
+
+        // Create a document fragment to reduce reflows when adding elements
+        const fragment = document.createDocumentFragment();
+
+        randomSome.forEach((song) => {
+          const songCard = document.createElement("div");
+          songCard.classList.add("episode-card");
+
+          console.log(song.album);
+
+          // Create the HTML structure for each song card
+          songCard.innerHTML = `
+        <div class="hero-content flex-row">
+          <div class="min-w-fit">
+            <img src="${song.album.artist.img1v1Url}" alt="${
+            song.name
+          }" class="shadow-lg rounded-md w-[4.5rem] h-[4.5rem] md:w-24 md:h-24" />
+          </div>
+          <div class="grow w-full overflow-auto">
+            <div>
+              <h2 class="md:text-xl text-sm font-semibold truncate">${
+                song.name
+              }</h2>
+              <p class="text-xs font-medium opacity-60">
+                ${song.duration ? song.duration + " • " : ""}${
+            song.album.copyrightId
+          }
+              </p>
+              <p class="my-1 text-xs md:text-sm line-clamp-2">${
+                song.album.name
+              }</p>
+            </div>
+          </div>
+          <label class="btn btn-circle md:mx-2 swap">
+            <input type="checkbox" class="card-pay-buttons" data-song-id="${
+              song.id
+            }" aria-label="Play and pause" />
+            <div class="swap-off">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="icon icon-tabler icon-tabler-player-play-filled"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path
+                  d="M6 4v16a1 1 0 0 0 1.524 .852l13 -8a1 1 0 0 0 0 -1.704l-13 -8a1 1 0 0 0 -1.524 .852z"
+                  stroke-width="0"
+                  fill="currentColor"></path>
+                </svg>
+            </div>
+            <div class="swap-on">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="icon icon-tabler icon-tabler-player-play-filled"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path
+                  d="M6 4v16a1 1 0 0 0 1.524 .852l13 -8a1 1 0 0 0 0 -1.704l-13 -8a1 1 0 0 0 -1.524 .852z"
+                  stroke-width="0"
+                  fill="currentColor"></path>
+                </svg>
+            </div>
+          </label>
+        </div>
+        <hr class="my-3 border-base-content opacity-[.15]" />
+      `;
+
+          // Add a click event listener to the play button
+          const playButton = songCard.querySelector(".card-pay-buttons");
+          playButton.addEventListener("click", async () => {
+            const songId = playButton.getAttribute("data-song-id");
+
+            try {
+              // Fetch the song's audio URL using the song ID
+              const audioResponse = await fetch(
+                `https://autumnfish.cn/song/url?id=${songId}`
+              );
+              if (!audioResponse.ok) {
+                throw new Error("Failed to fetch audio URL");
+              }
+              const audioData = await audioResponse.json();
+              const audioUrl = audioData.data[0].url;
+
+              // Play the audio
+              const audioElement = new Audio(audioUrl);
+              if (audioElement.paused) {
+                audioElement.play();
+              } else {
+                audioElement.pause();
+              }
+            } catch (error) {
+              console.error(error);
+            }
+          });
+
+          // Append the song card to the fragment
+          fragment.appendChild(songCard);
+        });
+
+        // Append the fragment to the song list container
+        songListContainer.appendChild(fragment);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    // Call the fetchData function to populate the song list
+    fetchData();
+  </script>
+</div>
